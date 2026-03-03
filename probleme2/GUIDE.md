@@ -39,7 +39,7 @@ Gunicorn sera utilisé comme serveur WSGI pour exécuter l’application Flask e
 Caddy servira de reverse proxy afin de ne pas exposer directement Gunicorn.
 Fail2ban permettra de détecter et bloquer les tentatives répétées d’authentification échouée.
 
-Vérification que les services tournent :
+Vérification du statut des services :
 
 ```bash
 sudo systemctl status caddy
@@ -73,7 +73,7 @@ pip install flask gunicorn
 pip freeze > requirements.txt
 ```
 
-L’environnement virtuel évite les conflits avec les paquets système.
+Les paquets sont installés dans `.venv` et non dans le Python système : on évite les conflits de versions entre projets et on ne modifie pas les paquets déjà présents sur la machine.
 
 ### 3.2 Implémentation de l’application
 

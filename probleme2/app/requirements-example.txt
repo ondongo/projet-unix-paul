@@ -1,0 +1,6 @@
+# Exemple de contenu pour requirements.txt (voir guide.md section 3.1).
+# En suivant le guide, ce fichier est généré par : pip freeze > requirements.txt
+# Ce qui suit est le minimum attendu ; pip freeze y ajoute les dépendances (ex. Werkzeug).
+
+flask
+gunicorn

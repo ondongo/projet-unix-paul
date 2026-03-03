@@ -73,7 +73,9 @@ pip install flask gunicorn
 pip freeze > requirements.txt
 ```
 
-Les paquets sont installés dans `.venv` et non dans le Python système : on évite les conflits de versions entre projets et on ne modifie pas les paquets déjà présents sur la machine.
+NB: Le fichier `requirements.txt` contient la liste des paquets installés dans le venv (Flask, Gunicorn et leurs dépendances). Il sert à réinstaller exactement les mêmes versions ailleurs (`pip install -r requirements.txt`). Un exemple de contenu minimal est fourni dans `requirements-example.txt`.
+
+Les paquets sont installés dans `.venv` et non dans le Python système : on évite les conflits de versions et on ne modifie pas les paquets déjà présents sur la machine.
 
 ### 3.2 Implémentation de l’application
 
@@ -81,7 +83,7 @@ Créer un fichier `app.py`. L’application doit :
 
 - utiliser des identifiants en dur dans le code (le sujet ne demande pas de base de données)
 - protéger `/private` avec un cookie de session
-- écrire les échecs de connexion dans `/var/log/authapp.log` pour Fail2ban
+- écrire chaque échec de connexion dans `/var/log/authapp.log` sur une ligne au format attendu par Fail2ban (voir section 7.2), par exemple : `FAILED_LOGIN ip=<IP> user=<username> time=<timestamp>`
 
 ---
 
@@ -174,8 +176,9 @@ Test :
 
 ```bash
 curl http://localhost/login
+```
 
-Le reverse proxy permet d’isoler l’application interne et de centraliser les accès HTTP (Le trafic HTTP passe par Caddy, qui relaie vers Gunicorn.).
+Le trafic HTTP passe par Caddy, qui relaie vers Gunicorn.
 
 
 ---
@@ -195,6 +198,8 @@ Créer `/etc/fail2ban/filter.d/authapp.conf` :
 failregex = ^FAILED_LOGIN ip=<HOST> user=.* time=.*$
 ignoreregex =
 ```
+
+Chaque ligne de log doit commencer par `FAILED_LOGIN ip=` suivi de l’IP (capturée par `<HOST>`), puis `user=` et `time=`. L’exemple d’application (`app-example.py`) écrit déjà dans ce format.
 
 ### 7.3 Jail
 
@@ -221,6 +226,7 @@ sudo systemctl restart fail2ban
 ## 8. Test du mécanisme de protection
 
 Simuler 6 tentatives échouées :
+coller la commande ci-dessous dans le terminal
 
 ```bash
 for i in $(seq 1 6); do

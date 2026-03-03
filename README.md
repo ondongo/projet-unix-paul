@@ -4,7 +4,7 @@
 
 Problème 2 – Configuration d’une application web avec reverse proxy, gestionnaire de processus et détection d’activité malveillante.
 
-**Guide de déploiement :** [probleme2/guide.md](probleme2/guide.md)
+**Guide de déploiement :** [probleme2/GUIDE.md](probleme2/GUIDE.md)
 
 ---
 

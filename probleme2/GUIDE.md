@@ -168,7 +168,7 @@ sudo chmod 640 /var/log/authapp.log
 
 Fail2ban utilisera ce fichier pour détecter les tentatives de bruteforce.
 
-**Note :** la fonction `log_failed_login` de l’exemple écrit déjà dans ce format (voir [app-example.py](probleme2/app/app-example.py)).
+**Note :** la fonction `log_failed_login` de l’exemple écrit déjà dans ce format (voir [app-example.py](/probleme2/app/app-example.py)).
 
 ---
 

@@ -139,7 +139,7 @@ Créer le fichier `app.py` dans le dossier de l’app (ex. `~/gnulinux-probleme2
 touch app.py
 ```
 
-Ouvrir le fichier avec un éditeur (`nano app.py`, `vim app.py`, etc.) et y recopier tout le contenu d’un des fichiers exemples fournis dans le dépôt : [app-example.py](/app/app-example.py) (version commentée) ou [app-example-no-coments.py](/app/app-example-no-coments.py) (même code sans commentaires).
+Ouvrir le fichier avec un éditeur (`nano app.py`, `vim app.py`, etc.) et y recopier tout le contenu d’un des fichiers exemples fournis dans le dépôt : [app-example.py](/probleme2/app/app-example.py) (version commentée) ou [app-example-no-coments.py](/probleme2/app/app-example-no-coments.py) (même code sans commentaires).
 
 L’application contient :
 

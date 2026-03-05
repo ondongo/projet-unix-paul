@@ -2,7 +2,7 @@
 
 ## 1. Objectif
 
-Ce guide décrit la mise en place d’une application web en Python avec :
+Ce guide est une procédure à suivre pour obtenir une application web en Python avec :
 
 - authentification via `/login`
 - accès protégé via `/private`
@@ -10,11 +10,13 @@ Ce guide décrit la mise en place d’une application web en Python avec :
 - serveur d’application (Gunicorn)
 - bannissement IP après trop d’échecs de connexion (Fail2ban)
 
-L’environnement cible est une machine Debian disposant d'un autre user différent de root avec les privilèges sudo.
+Environnement cible : machine Debian, avec un utilisateur non root disposant de sudo.
 
 ---
 
 ## 2. Installation des dépendances système
+
+**Objectif :** avoir Python 3, Fail2ban, Caddy et leurs services activés.
 
 Mise à jour des paquets :
 
@@ -137,17 +139,19 @@ Créer le fichier `app.py` dans le dossier de l’app (ex. `~/gnulinux-probleme2
 touch app.py
 ```
 
-Ouvrir le fichier avec un éditeur (`nano app.py`, `vim app.py`, etc.) et y recopier tout le contenu du fichier exemple fourni dans le dépôt : [probleme2/app/app-example.py](probleme2/app/app-example.py). (Prendre la version no comments)
+Ouvrir le fichier avec un éditeur (`nano app.py`, `vim app.py`, etc.) et y recopier tout le contenu d’un des fichiers exemples fournis dans le dépôt : [app-example.py](probleme2/app/app-example.py) (version commentée) ou [app-example-no-coments.py](probleme2/app/app-example-no-coments.py) (même code sans commentaires).
 
-L’application ainsi obtenue doit :
+L’application contient :
 
-- utiliser des identifiants en dur dans le code (le sujet ne demande pas de base de données)
-- protéger `/private` avec un cookie de session
-- écrire chaque échec de connexion dans `/var/log/authapp.log` sur une ligne au format attendu par Fail2ban (voir section 7.2), par exemple : `FAILED_LOGIN ip=<IP> user=<username> time=<timestamp>`
+- des identifiants en dur ;
+- une route `/private` protégée par un cookie de session ;
+- l’écriture de chaque échec de connexion dans `/var/log/authapp.log` sur une ligne au format attendu par Fail2ban (voir section 7.2), par exemple : `FAILED_LOGIN ip=<IP> user=<username> time=<timestamp>`.
 
 ---
 
 ## 4. Configuration du journal d’authentification
+
+**Objectif :** créer le fichier de log des échecs de connexion et en fixer les droits pour l’app et Fail2ban.
 
 Création du fichier de log :
 
@@ -164,7 +168,7 @@ sudo chmod 640 /var/log/authapp.log
 
 Fail2ban utilisera ce fichier pour détecter les tentatives de bruteforce.
 
-**Note :** Chaque échec de connexion est écrit dans `/var/log/authapp.log` sur une ligne au format attendu par Fail2ban (voir section 7.2), par exemple `FAILED_LOGIN ip=<IP> user=<username> time=<timestamp>`. C’est le cas dans la fonction `log_failed_login` de l’exemple ([app-example.py](probleme2/app/app-example.py)).
+**Note :** la fonction `log_failed_login` de l’exemple écrit déjà dans ce format (voir [app-example.py](probleme2/app/app-example.py)).
 
 ---
 
@@ -296,22 +300,13 @@ Enregistrer et quitter. Puis recharger Caddy pour appliquer la config :
 sudo systemctl reload caddy
 ```
 
-Vérifier que le site répond derrière Caddy :
+Vérifier que le site répond derrière Caddy. Depuis la machine où Caddy tourne :
 
 ```bash
 prince@dbmysql:~$ curl http://localhost/login
 ```
 
-Vous allez recevoir ce contenu html 
-```bash
-
-    <h1>Login</h1>
-    <form method="POST" action="/login">
-        <input name="username" placeholder="Username">
-        <input name="password" type="password" placeholder="Password">
-        <button type="submit">Connexion</button>
-    </form>
-```
+Réponse attendue : une page HTML contenant un formulaire de connexion (titre « Login », champs username/password, bouton Connexion). Un statut HTTP 200 confirme que le reverse proxy transmet bien les requêtes à Gunicorn.
 
 ---
 
@@ -363,42 +358,6 @@ Enregistrer, quitter. Puis redémarrer Fail2ban pour charger la nouvelle jail :
 sudo systemctl restart fail2ban
 ```
 
-### Cas d’erreur possible : Fail2ban affiche 0 failed
-
-**Symptôme :** `sudo fail2ban-client status authapp` affiche « Currently failed: 0 » alors que le log contient des lignes d’échec.
-
-**Vérifier le contenu du log** (lecture réservée à root, donc utiliser `sudo cat`) :
-
-```bash
-sudo cat /var/log/authapp.log
-```
-
-Exemple de sortie affichée :
-
-```text
-FAILED_LOGIN ip=::1 user=paul time=2026-03-05T21:45:45Z
-FAILED_LOGIN ip=::1 user=paul time=2026-03-05T21:45:45Z
-...
-```
-
-En test avec `curl localhost`, l’IP est souvent **`::1`** (IPv6). Le motif standard `<HOST>` de Fail2ban ne reconnaît que les IPv4, donc les lignes ne sont pas comptées.
-
-**Solution :** utiliser un filtre qui accepte toute IP (IPv4 ou IPv6). Dans `/etc/fail2ban/filter.d/authapp.conf`, la ligne `failregex` doit être :
-
-```ini
-failregex = ^FAILED_LOGIN ip=(?P<host>\S+) user=.* time=.*$
-```
-
-Puis redémarrer Fail2ban et revérifier :
-
-```bash
-sudo systemctl restart fail2ban
-sudo fail2ban-regex /var/log/authapp.log /etc/fail2ban/filter.d/authapp.conf
-sudo fail2ban-client status authapp
-```
-
-Le test `fail2ban-regex` doit afficher des lignes « matched » ; après 5 échecs, l’IP doit apparaître dans « Banned IP list ».
-
 ---
 
 ## 8. Test du mécanisme de protection
@@ -413,7 +372,7 @@ for i in $(seq 1 6); do
 done
 ```
 
-**Résultat attendu :** six fois `Unauthorized` (une par requête). Si vous voyez « 500 Internal Server Error » à la place, les erreurs apparaissent après ce test — voir le [cas d’erreur authapp (section 5.1)](#cas-derreur-possible--authapp-ne-démarre-pas-ou-renvoie-500) et le [cas d’erreur Fail2ban (section 7)](#cas-derreur-possible--fail2ban-affiche-0-failed).
+**Résultat attendu :** six fois `Unauthorized` (une par requête). Si vous voyez « 500 Internal Server Error » à la place, les erreurs apparaissent après ce test — voir le [cas d’erreur authapp (section 5.1)](#cas-derreur-possible--authapp-ne-démarre-pas-ou-renvoie-500) et le [cas d’erreur Fail2ban (section 8, ci-dessous)](#cas-derreur-possible--fail2ban-affiche-0-failed).
 
 Pour afficher les échecs enregistrés dans le log :
 
@@ -430,7 +389,25 @@ sudo fail2ban-client status authapp
 sudo cat /var/log/authapp.log
 ```
 
-L’IP doit apparaître dans la liste des bannis. La deuxième commande affiche le contenu du log. La protection bruteforce fonctionne.
+Dans la sortie, consulter la ligne « Banned IP list » : l’IP utilisée pour les requêtes (souvent `127.0.0.1` ou `::1`) doit y figurer. Si c’est le cas, la protection bruteforce fonctionne.
+
+**Cas d’erreur possible : Fail2ban affiche 0 failed**
+
+Si `sudo fail2ban-client status authapp` affiche « Currently failed: 0 » alors que vous venez de faire les 6 requêtes, vérifier le log (lecture réservée à root) :
+
+```bash
+sudo cat /var/log/authapp.log
+```
+
+Exemple de sortie (avec `curl localhost`, l’IP est souvent `::1` en IPv6) :
+
+```text
+FAILED_LOGIN ip=::1 user=paul time=2026-03-05T21:45:45Z
+FAILED_LOGIN ip=::1 user=paul time=2026-03-05T21:45:45Z
+...
+```
+
+Le motif standard `<HOST>` de Fail2ban ne reconnaît que les IPv4, donc les lignes avec `::1` ne sont pas comptées. **Solution :** le filtre doit utiliser un groupe nommé pour l’IP, par exemple `(?P<host>\S+)`, comme indiqué en section 7.1. Vérifier que le contenu de `/etc/fail2ban/filter.d/authapp.conf` correspond bien à celui de la section 7.1, puis exécuter `sudo systemctl restart fail2ban` et refaire le test.
 
 **Pour débannir une IP** (ex. après un test) : `sudo fail2ban-client set authapp unbanip <IP>` (remplacer `<IP>` par l’adresse).
 

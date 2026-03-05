@@ -2,5 +2,13 @@
 # En suivant le guide, ce fichier est généré par : pip freeze > requirements.txt
 # Ce qui suit est le minimum attendu ; pip freeze y ajoute les dépendances (ex. Werkzeug).
 
-flask
-gunicorn
+GNU nano 8.4                                                                        
+blinker==1.9.0
+click==8.3.1
+Flask==3.1.3
+gunicorn==25.1.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+packaging==26.0
+Werkzeug==3.1.6
